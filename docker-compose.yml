@@ -1,0 +1,42 @@
+services:
+  server:
+    container_name: code-sync-server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: runner
+    volumes:
+      - ./server:/app
+      - /build/node_modules
+    networks:
+      - Code-Sync
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: http://localhost:5173
+
+  client:
+    container_name: code-sync-client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        VITE_SOCKET_URL: http://localhost:3000
+        VITE_SOCKET_PATH: /socket.io
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:2000/api/v2}
+    volumes:
+      - ./client:/app
+      - /build/node_modules
+    networks:
+      - Code-Sync
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+
+networks:
+  Code-Sync:
+    driver: bridge

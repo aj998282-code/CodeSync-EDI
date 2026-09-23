@@ -1,0 +1,15 @@
+import axios, { AxiosInstance } from "axios"
+
+const pistonBaseUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_PISTON_API_URL ||
+    "/api/v2"
+
+const instance: AxiosInstance = axios.create({
+    baseURL: pistonBaseUrl,
+    headers: {
+        "Content-Type": "application/json",
+    },
+})
+
+export default instance
