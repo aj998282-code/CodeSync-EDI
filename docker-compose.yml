@@ -1,6 +1,6 @@
 services:
   server:
-    container_name: code-sync-server
+    container_name: orbit-x-server
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -9,7 +9,7 @@ services:
       - ./server:/app
       - /build/node_modules
     networks:
-      - Code-Sync
+      - orbit-x
     ports:
       - "3000:3000"
     environment:
@@ -18,7 +18,7 @@ services:
       CORS_ORIGIN: http://localhost:5173
 
   client:
-    container_name: code-sync-client
+    container_name: orbit-x-client
     build:
       context: ./client
       dockerfile: Dockerfile
@@ -31,12 +31,12 @@ services:
       - ./client:/app
       - /build/node_modules
     networks:
-      - Code-Sync
+      - orbit-x
     ports:
       - "5173:5173"
     depends_on:
       - server
 
 networks:
-  Code-Sync:
+  orbit-x:
     driver: bridge

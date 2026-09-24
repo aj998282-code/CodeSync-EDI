@@ -1,7 +1,5 @@
 import { useAppContext } from "@/context/AppContext"
-import { useSocket } from "@/context/SocketContext"
-import { SocketEvent } from "@/types/socket"
-import { USER_STATUS } from "@/types/user"
+import { USER_CONNECTION_STATUS, USER_STATUS, RemoteUser } from "@/types/user"
 import { ChangeEvent, FormEvent, useEffect, useRef } from "react"
 import { toast } from "react-hot-toast"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -10,8 +8,7 @@ import logo from "@/assets/logo.svg"
 
 const FormComponent = () => {
     const location = useLocation()
-    const { currentUser, setCurrentUser, status, setStatus } = useAppContext()
-    const { socket } = useSocket()
+    const { currentUser, setCurrentUser, setStatus, setUsers } = useAppContext()
 
     const usernameRef = useRef<HTMLInputElement | null>(null)
     const navigate = useNavigate()
@@ -47,16 +44,23 @@ const FormComponent = () => {
 
     const joinRoom = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (status === USER_STATUS.ATTEMPTING_JOIN) return
         if (!validateForm()) return
-        if (!socket.connected) {
-            setStatus(USER_STATUS.CONNECTION_FAILED)
-            toast.error("The server is not connected. Please try again.")
-            return
+
+        setStatus(USER_STATUS.JOINED)
+        const localUser: RemoteUser = {
+            ...currentUser,
+            status: USER_CONNECTION_STATUS.ONLINE,
+            cursorPosition: 0,
+            typing: false,
+            currentFile: "",
+            socketId: "local-user",
         }
-        toast.loading("Joining room...")
-        setStatus(USER_STATUS.ATTEMPTING_JOIN)
-        socket.emit(SocketEvent.JOIN_REQUEST, currentUser)
+        setUsers([localUser])
+        navigate(`/editor/${currentUser.roomId}`, {
+            state: {
+                username: currentUser.username,
+            },
+        })
     }
 
     useEffect(() => {
@@ -68,30 +72,6 @@ const FormComponent = () => {
             }
         }
     }, [currentUser, location.state?.roomId, setCurrentUser])
-
-    useEffect(() => {
-        if (status === USER_STATUS.DISCONNECTED && !socket.connected) {
-            socket.connect()
-            return
-        }
-
-        const isRedirect = sessionStorage.getItem("redirect") || false
-
-        if (status === USER_STATUS.JOINED && !isRedirect) {
-            const username = currentUser.username
-            sessionStorage.setItem("redirect", "true")
-            navigate(`/editor/${currentUser.roomId}`, {
-                state: {
-                    username,
-                },
-            })
-        } else if (status === USER_STATUS.JOINED && isRedirect) {
-            sessionStorage.removeItem("redirect")
-            setStatus(USER_STATUS.DISCONNECTED)
-            socket.disconnect()
-            socket.connect()
-        }
-    }, [currentUser, location.state?.redirect, navigate, setStatus, socket, status])
 
     return (
         <div className="flex w-full max-w-[500px] flex-col items-center justify-center gap-4 p-4 sm:w-[500px] sm:p-8">
